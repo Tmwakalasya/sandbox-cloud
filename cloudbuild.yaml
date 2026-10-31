@@ -1,0 +1,14 @@
+# Remote build only. No deploy step or implicit cluster mutation.
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '--target', 'control', '-t', '${_REGISTRY}/control:${BUILD_ID}', '.']
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '--target', 'workspace', '-t', '${_REGISTRY}/workspace:${BUILD_ID}', '.']
+images:
+  - '${_REGISTRY}/control:${BUILD_ID}'
+  - '${_REGISTRY}/workspace:${BUILD_ID}'
+substitutions:
+  _REGISTRY: us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud
+options:
+  logging: CLOUD_LOGGING_ONLY
+timeout: 1200s

@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sandbox-control
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sandbox-workspaces
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sandbox-api
+  namespace: sandbox-control
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: workspace-manager
+  namespace: sandbox-workspaces
+rules:
+  - apiGroups: ['']
+    resources: ['pods']
+    verbs: ['create', 'get', 'list', 'delete']
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sandbox-api
+  namespace: sandbox-workspaces
+subjects:
+  - kind: ServiceAccount
+    name: sandbox-api
+    namespace: sandbox-control
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: workspace-manager
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: workspace-budget
+  namespace: sandbox-workspaces
+spec:
+  hard:
+    count/pods: '4'
+    requests.cpu: '4'
+    requests.memory: 2Gi
+    limits.cpu: '4'
+    limits.memory: 2Gi
+    requests.ephemeral-storage: 4Gi
+    limits.ephemeral-storage: 4Gi
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: runner-ingress
+  namespace: sandbox-workspaces
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: sandbox-control
+          podSelector:
+            matchLabels:
+              app: sandbox-api
+      ports:
+        - protocol: TCP
+          port: 8090
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: control-ingress
+  namespace: sandbox-control
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress: []
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sandbox-api
+  namespace: sandbox-control
+spec:
+  type: ClusterIP
+  selector:
+    app: sandbox-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
