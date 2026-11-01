@@ -13,6 +13,13 @@ workspace when finished, or let its TTL expire.
 [Deployment guide](deploy/README.md) · [CLI reference](#cli-reference) ·
 [Architecture](#architecture) · [Source reading path](#source-reading-path)
 
+![Live GKE demo: create a workspace, upload Go code, test, run, and destroy it](docs/demo.gif)
+
+Recorded against GKE with the warm pool enabled. After building the CLI and
+starting the port-forward below, run `vhs demo-v2.tape` to record the same flow
+with VHS, ttyd, ffmpeg, and Chrome installed. It writes `demo-v2.gif` and
+`demo-v2.mp4` in the repository root.
+
 Sandbox Cloud is designed for trusted development workloads. It does not provide
 hostile-code isolation or a multi-user authentication layer.
 
