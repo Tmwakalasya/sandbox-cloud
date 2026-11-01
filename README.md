@@ -62,16 +62,30 @@ accessed through Kubernetes port-forwarding.
 
 ## Architecture
 
-```mermaid
-flowchart LR
-  CLI[Go CLI] -->|kubectl port-forward| API[Control API]
-  API -->|client-go / ServiceAccount| K8S[Kubernetes API]
-  K8S --> CLAIM[Workspace claim ConfigMap]
-  K8S --> POD[Workspace Pod]
-  API -->|internal HTTP| RUNNER[Runner inside Pod]
-  RUNNER --> PROCESS[Command process group]
-  RUNNER --> FILES[Ephemeral /workspace volume]
-  REAPER[Expiry loop in control API] -->|UID-checked delete| K8S
+```text
+                         +-----------------------+
+                         | sandbox (Go CLI)      |
+                         +-----------+-----------+
+                                     |
+                         HTTP / kubectl port-forward
+                                     |
+                                     v
+                   +------------------------------------+
+                   | sandboxd (control API)             |
+                   | allocate | proxy | reconcile       |
+                   +--------+------------------+--------+
+                            |                  |
+             client-go / ServiceAccount        | HTTP :8090
+                            |                  |
+                            v                  v
+ +----------------------------------+   +-------------------------------+
+ | Kubernetes API                   |   | Workspace Pod                 |
+ |                                  |   |                               |
+ | Claim ConfigMaps                 |   | sandbox-runner                |
+ | workspace ID -> Pod name + UID   |   |     |                         |
+ |                                  |   |     +-> command process group |
+ | Pod specs and status             |-->|     +-> /workspace (emptyDir)  |
+ +----------------------------------+   +-------------------------------+
 ```
 
 | Binary | Responsibility | State |
