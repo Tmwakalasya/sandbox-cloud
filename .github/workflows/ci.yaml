@@ -43,5 +43,6 @@ jobs:
         with:
           name: e2e-diagnostics
           path: .local/diagnostics
+          include-hidden-files: true
       - run: make local-down
         if: always()
