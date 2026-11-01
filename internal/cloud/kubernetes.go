@@ -1,4 +1,4 @@
-// Package cloud owns workspace Pods. Command state belongs to each Pod's runner.
+// Package cloud owns workspace claims and Pods. Command state belongs to each Pod's runner.
 package cloud
 
 import (
@@ -50,10 +50,12 @@ type Error struct {
 func (e *Error) Error() string { return e.Message }
 
 type Kubernetes struct {
-	Client    typed.CoreV1Interface
-	Namespace string
-	Image     string
-	Now       func() time.Time
+	Client       typed.CoreV1Interface
+	Namespace    string
+	Image        string
+	Now          func() time.Time
+	WarmPoolSize int
+	PoolWake     chan struct{}
 }
 
 func (k *Kubernetes) now() time.Time {
@@ -76,18 +78,21 @@ func (k *Kubernetes) Create(ctx context.Context, req CreateRequest) (Workspace, 
 	if k.Image == "" {
 		return Workspace{}, errors.New("workspace image is not configured")
 	}
-	p := k.pod(req)
-	created, err := k.Client.Pods(k.Namespace).Create(ctx, p, meta.CreateOptions{})
-	if apierrors.IsAlreadyExists(err) {
-		created, err = k.getPod(ctx, req.ID)
-		if err == nil && (created.Annotations[ttlAnnotation] != strconv.FormatInt(req.TTLSeconds, 10) || len(created.Spec.Containers) != 1 || created.Spec.Containers[0].Image != k.Image) {
+	// Workspaces created before claim records were introduced remain usable.
+	old, err := k.Client.Pods(k.Namespace).Get(ctx, req.ID, meta.GetOptions{})
+	if err == nil && old.Labels[claimLabel] == "" {
+		if !managedPod(old) || old.Labels[poolLabel] == "true" {
+			return Workspace{}, &Error{409, "workspace ID is occupied by another Pod"}
+		}
+		if old.Annotations[ttlAnnotation] != strconv.FormatInt(req.TTLSeconds, 10) || len(old.Spec.Containers) != 1 || old.Spec.Containers[0].Image != k.Image {
 			return Workspace{}, &Error{409, "workspace ID already exists with different settings"}
 		}
+		return k.view(old), nil
 	}
-	if err != nil {
+	if err != nil && !apierrors.IsNotFound(err) {
 		return Workspace{}, err
 	}
-	return k.view(created), nil
+	return k.createClaim(ctx, req)
 }
 
 func (k *Kubernetes) pod(req CreateRequest) *core.Pod {
@@ -114,39 +119,74 @@ func (k *Kubernetes) pod(req CreateRequest) *core.Pod {
 }
 func quantity(s string) *resource.Quantity { q := resource.MustParse(s); return &q }
 
-func (k *Kubernetes) getPod(ctx context.Context, id string) (*core.Pod, error) {
+// resolve keeps the public workspace ID independent of its physical Pod name.
+func (k *Kubernetes) resolve(ctx context.Context, id string) (Workspace, *core.Pod, error) {
 	if !validID.MatchString(id) {
-		return nil, &Error{400, "invalid workspace ID"}
+		return Workspace{}, nil, &Error{400, "invalid workspace ID"}
+	}
+	c, err := k.getClaim(ctx, id)
+	if err == nil {
+		var p *core.Pod
+		if c.Data["pod"] != "" {
+			p, err = k.Client.Pods(k.Namespace).Get(ctx, c.Data["pod"], meta.GetOptions{})
+			if err != nil && !apierrors.IsNotFound(err) {
+				return Workspace{}, nil, err
+			}
+		}
+		return k.claimView(c, p), p, nil
+	}
+	if !apierrors.IsNotFound(err) {
+		return Workspace{}, nil, err
 	}
 	p, err := k.Client.Pods(k.Namespace).Get(ctx, id, meta.GetOptions{})
 	if err != nil {
-		return nil, err
+		return Workspace{}, nil, err
 	}
-	if p.Labels[ownerLabel] != owner || p.Labels["app.kubernetes.io/component"] != "workspace" {
-		return nil, &Error{404, "workspace not found"}
+	if !managedPod(p) || p.Labels[claimLabel] != "" || p.Labels[poolLabel] == "true" {
+		return Workspace{}, nil, &Error{404, "workspace not found"}
 	}
-	return p, nil
+	return k.view(p), p, nil
 }
 func (k *Kubernetes) Get(ctx context.Context, id string) (Workspace, error) {
-	p, err := k.getPod(ctx, id)
-	if err != nil {
-		return Workspace{}, err
-	}
-	return k.view(p), nil
+	w, _, err := k.resolve(ctx, id)
+	return w, err
 }
 func (k *Kubernetes) List(ctx context.Context) ([]Workspace, error) {
-	pods, err := k.Client.Pods(k.Namespace).List(ctx, meta.ListOptions{LabelSelector: ownerLabel + "=" + owner + ",app.kubernetes.io/component=workspace"})
+	pods, err := k.Client.Pods(k.Namespace).List(ctx, meta.ListOptions{LabelSelector: podSelector})
 	if err != nil {
 		return nil, err
 	}
-	result := make([]Workspace, 0, len(pods.Items))
+	claims, err := k.Client.ConfigMaps(k.Namespace).List(ctx, meta.ListOptions{LabelSelector: claimSelector})
+	if err != nil {
+		return nil, err
+	}
+	byName := make(map[string]*core.Pod, len(pods.Items))
+	result := make([]Workspace, 0, len(claims.Items))
 	for i := range pods.Items {
-		result = append(result, k.view(&pods.Items[i]))
+		p := &pods.Items[i]
+		byName[p.Name] = p
+		if p.Labels[claimLabel] == "" && p.Labels[poolLabel] != "true" {
+			result = append(result, k.view(p))
+		}
+	}
+	for i := range claims.Items {
+		c := &claims.Items[i]
+		result = append(result, k.claimView(c, byName[c.Data["pod"]]))
 	}
 	return result, nil
 }
 func (k *Kubernetes) Destroy(ctx context.Context, id string) error {
-	p, err := k.getPod(ctx, id)
+	if !validID.MatchString(id) {
+		return &Error{400, "invalid workspace ID"}
+	}
+	c, err := k.getClaim(ctx, id)
+	if err == nil {
+		return k.destroyClaim(ctx, c, false)
+	}
+	if !apierrors.IsNotFound(err) {
+		return err
+	}
+	_, p, err := k.resolve(ctx, id)
 	if apierrors.IsNotFound(err) {
 		return nil
 	}
@@ -163,11 +203,10 @@ func (k *Kubernetes) delete(ctx context.Context, id string, uid types.UID) error
 	return err
 }
 func (k *Kubernetes) RunnerAddress(ctx context.Context, id string) (string, error) {
-	p, err := k.getPod(ctx, id)
+	w, p, err := k.resolve(ctx, id)
 	if err != nil {
 		return "", err
 	}
-	w := k.view(p)
 	if w.State != "ready" {
 		return "", &Error{409, "workspace is " + w.State + ": " + w.Reason}
 	}
@@ -234,7 +273,36 @@ func (k *Kubernetes) Reap(ctx context.Context) error {
 		return err
 	}
 	var errs []error
+	if err := k.reapClaims(ctx); err != nil {
+		errs = append(errs, err)
+	}
 	for _, p := range pods.Items {
+		if p.Labels[claimLabel] != "" {
+			// Re-read the owner rather than using a stale claims list: an allocator
+			// may have created this claim while reconciliation was listing Pods.
+			var name string
+			for _, ref := range p.OwnerReferences {
+				if ref.Kind == "ConfigMap" && string(ref.UID) == p.Labels[claimLabel] {
+					name = ref.Name
+				}
+			}
+			if name == "" {
+				errs = append(errs, fmt.Errorf("Pod %s: missing claim owner", p.Name))
+				continue
+			}
+			c, err := k.getClaim(ctx, name)
+			if apierrors.IsNotFound(err) || err == nil && !podBelongsTo(&p, c) {
+				if err := k.delete(ctx, p.Name, p.UID); err != nil {
+					errs = append(errs, err)
+				}
+			} else if err != nil {
+				errs = append(errs, err)
+			}
+			continue
+		}
+		if p.Labels[poolLabel] == "true" {
+			continue // Idle cleanup uses resourceVersion preconditions in MaintainPool.
+		}
 		expires, err := time.Parse(time.RFC3339, p.Annotations[expiresAnnotation])
 		if err != nil {
 			errs = append(errs, fmt.Errorf("%s: invalid expiration: %w", p.Name, err))

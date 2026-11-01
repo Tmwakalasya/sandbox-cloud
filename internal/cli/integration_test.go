@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -16,8 +17,12 @@ import (
 	"time"
 
 	core "k8s.io/api/core/v1"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
+	ktest "k8s.io/client-go/testing"
 	"sandbox-cloud/internal/cloud"
 	"sandbox-cloud/internal/runner"
 )
@@ -33,6 +38,11 @@ func (t transportTo) RoundTrip(req *http.Request) (*http.Response, error) {
 	return http.DefaultTransport.RoundTrip(r)
 }
 func TestCLIControlAPIAndRunner(t *testing.T) {
+	for _, warm := range []bool{false, true} {
+		t.Run(fmt.Sprintf("warm=%v", warm), func(t *testing.T) { testCLIControlAPIAndRunner(t, warm) })
+	}
+}
+func testCLIControlAPIAndRunner(t *testing.T, warm bool) {
 	ctx := context.Background()
 	dir := t.TempDir()
 	r, err := runner.New(dir)
@@ -44,7 +54,39 @@ func TestCLIControlAPIAndRunner(t *testing.T) {
 	defer runnerHTTP.Close()
 	target, _ := url.Parse(runnerHTTP.URL)
 	kube := fake.NewClientset()
+	var sequence int
+	kube.PrependReactor("create", "*", func(a ktest.Action) (bool, runtime.Object, error) {
+		// Supply metadata that a real API server sets on claims and Pods.
+		m, err := apimeta.Accessor(a.(ktest.CreateAction).GetObject())
+		if err != nil {
+			return true, nil, err
+		}
+		sequence++
+		m.SetUID(types.UID(fmt.Sprintf("uid-%d", sequence)))
+		m.SetCreationTimestamp(meta.Now())
+		return false, nil, nil
+	})
 	backend := &cloud.Kubernetes{Client: kube.CoreV1(), Namespace: "test", Image: "test/workspace:v1"}
+	var warmName string
+	if warm {
+		backend.WarmPoolSize = 1
+		if err := backend.MaintainPool(ctx); err != nil {
+			t.Fatal(err)
+		}
+		pods, err := kube.CoreV1().Pods("test").List(ctx, meta.ListOptions{})
+		if err != nil || len(pods.Items) != 1 {
+			t.Fatalf("pool: %+v %v", pods, err)
+		}
+		p := pods.Items[0].DeepCopy()
+		warmName = p.Name
+		p.Spec.NodeName = "test-worker"
+		p.Status.Phase = core.PodRunning
+		p.Status.PodIP = "10.0.0.1"
+		p.Status.Conditions = []core.PodCondition{{Type: core.PodReady, Status: core.ConditionTrue}}
+		if _, err := kube.CoreV1().Pods("test").Update(ctx, p, meta.UpdateOptions{}); err != nil {
+			t.Fatal(err)
+		}
+	}
 	api := httptest.NewServer((&cloud.Server{Kube: backend, Transport: transportTo{target}}).Handler())
 	defer api.Close()
 	invoke := func(args ...string) (string, string, error) {
@@ -60,13 +102,20 @@ func TestCLIControlAPIAndRunner(t *testing.T) {
 	if err := json.Unmarshal([]byte(output), &w); err != nil {
 		t.Fatal(err)
 	}
-	if w.State != "pending" {
-		t.Fatalf("state %s", w.State)
+	expected := "pending"
+	podName := w.ID
+	if warm {
+		expected, podName = "ready", warmName
 	}
-	if _, _, err := invoke("exec", w.ID, "--", "true"); err == nil {
-		t.Fatal("executed in pending workspace")
+	if w.State != expected {
+		t.Fatalf("state %s; want %s", w.State, expected)
 	}
-	p, err := kube.CoreV1().Pods("test").Get(ctx, w.ID, meta.GetOptions{})
+	if !warm {
+		if _, _, err := invoke("exec", w.ID, "--", "true"); err == nil {
+			t.Fatal("executed in pending workspace")
+		}
+	}
+	p, err := kube.CoreV1().Pods("test").Get(ctx, podName, meta.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

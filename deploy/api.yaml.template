@@ -5,6 +5,8 @@ metadata:
   namespace: sandbox-control
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: sandbox-api
@@ -26,6 +28,7 @@ spec:
           args:
             - --listen=:8080
             - --namespace=sandbox-workspaces
+            - --warm-pool-size=1
             - --workspace-image=WORKSPACE_IMAGE
           ports:
             - name: http

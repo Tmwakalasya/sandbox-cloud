@@ -161,15 +161,16 @@ func (s *Server) Reconcile(ctx context.Context) {
 	defer ticker.Stop()
 	for {
 		pass, cancel := context.WithTimeout(ctx, 15*time.Second)
-		err := s.Kube.Reap(pass)
+		err := errors.Join(s.Kube.Reap(pass), s.Kube.MaintainPool(pass))
 		cancel()
 		if err != nil && ctx.Err() == nil {
-			log.Printf("expiry reconciliation: %v", err)
+			log.Printf("workspace reconciliation: %v", err)
 		}
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
+		case <-s.Kube.PoolWake:
 		}
 	}
 }

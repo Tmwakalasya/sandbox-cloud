@@ -1,79 +1,113 @@
-# GKE deployment runbook
+# GKE deployment guide
 
-Target: project `my-dev-server-507301`, cluster `sandbox-cluster1`, region
-`us-central1`, DNS endpoint. These files are prepared, **not applied**. Building
-and deploying incurs cloud usage; review the operations and identities first.
+Build the images in Cloud Build, store them in Artifact Registry, and deploy the
+control API to an existing GKE cluster. No local Docker installation or container
+image downloads are required. Run commands from the repository root.
 
-## What will change
+## Deployment layout
 
-- A regional Docker repository named `sandbox-cloud` (if not already present).
-- A remote Cloud Build invocation uploading the allowlisted source files only.
-- `sandbox-control` and `sandbox-workspaces` namespaces.
-- One control API Deployment and one internal ClusterIP Service.
-- A ServiceAccount with only create/get/list/delete on workspace Pods.
-- Workspace quota: four Pod objects total, four CPU limits and 2 GiB memory limits.
-- Ingress policies: only control API Pods can reach runners; ordinary Pod ingress
-  to the control API is denied. Use Kubernetes port-forward for laptop access.
+- `sandbox-control`: one API Deployment, an internal ClusterIP Service, and a
+  dedicated ServiceAccount.
+- `sandbox-workspaces`: disposable Pods, workspace claim ConfigMaps, and a Role
+  granting the API `create/get/list/update/delete` on those two resource types.
+- ResourceQuota: four Pod objects, 16 claim ConfigMaps, four CPU limits, and 2 GiB
+  memory limits. Idle and terminal Pods count until deleted.
+- Warm pool: target one unused Pod, with cold allocation when no ready Pod is
+  available. Replenishment can be blocked by the same namespace quota.
+- NetworkPolicies: runner ingress is limited to API Pods. Ordinary Pod ingress to
+  the API is denied; clients connect through Kubernetes port-forwarding.
 
-Egress remains unrestricted for trusted workloads and dependency downloads. This
-is not a hostile-code deployment. Do not place unrelated workloads or credentials
-in these namespaces. Count quota includes terminal Pods until deletion.
-Autopilot may adjust requests; inspect admitted resource values before load tests.
+Egress is unrestricted for trusted workloads and dependency downloads. Keep these
+namespaces dedicated to Sandbox Cloud. Autopilot can adjust Pod requests; inspect
+admitted values when planning capacity or comparing benchmarks.
 
-## 1. Connect using an isolated kubeconfig
+## 1. Prerequisites and target
 
-The auth plugin must be installed and its SDK bin directory available on PATH.
-The following commands do not switch contexts in the default kubeconfig:
+Requirements:
+
+- A Linux GKE cluster with enforced NetworkPolicies and a DNS control-plane
+  endpoint for the connection command below.
+- `gcloud`, `kubectl`, Python 3, and `gke-gcloud-auth-plugin` on PATH.
+- GKE, Cloud Build, and Artifact Registry APIs enabled in the project.
+- Permission to access the cluster, submit builds, and apply the supplied
+  namespaces, RBAC, policies, quota, Service, and Deployment.
+- The Go CLI built with `make build` from the repository root.
+
+Set the target values for the deployment:
+
+```sh
+export SANDBOX_PROJECT=YOUR_PROJECT_ID
+export SANDBOX_REGION=us-central1
+export SANDBOX_CLUSTER=YOUR_CLUSTER_NAME
+export SANDBOX_REGISTRY="${SANDBOX_REGION}-docker.pkg.dev/${SANDBOX_PROJECT}/sandbox-cloud"
+```
+
+The commands below override the registry default in `cloudbuild.yaml`.
+Cloud Build, registry storage, and GKE resources incur usage charges.
+
+## 2. Connect to the cluster
+
+Use a separate kubeconfig to keep the default configuration unchanged:
 
 ```sh
 export PATH="$(gcloud info --format='value(installation.sdk_root)')/bin:$PATH"
 export KUBECONFIG="$HOME/.kube/sandbox-cloud.config"
-gcloud container clusters get-credentials sandbox-cluster1 \
-  --region=us-central1 --project=my-dev-server-507301 --dns-endpoint
+gcloud container clusters get-credentials "$SANDBOX_CLUSTER" \
+  --region="$SANDBOX_REGION" --project="$SANDBOX_PROJECT" --dns-endpoint
+kubectl config current-context
 kubectl get namespaces
 ```
 
-## 2. Review build identity and registry permissions
+Keep this `KUBECONFIG` selected for subsequent `kubectl` commands, including any
+terminal used for port-forwarding.
 
-Before submitting, identify the Cloud Build service account and grant only the
-required source-bucket read, log-writing and repository write permissions. Ensure
-the GKE node identity can read the repository. Do not grant project-wide Editor
-as a shortcut. Exact IAM bindings depend on the project's existing identities and
-must be inspected and approved separately.
+## 3. Configure the registry and build remotely
 
-After approval, create the repository if it does not exist:
+The Cloud Build identity needs access to the uploaded source, permission to write
+build logs, and write access to the image repository. The GKE node identity needs
+repository read access. Use scoped permissions for the project's actual build and
+node identities.
+
+If the repository does not already exist:
 
 ```sh
 gcloud artifacts repositories create sandbox-cloud \
-  --repository-format=docker --location=us-central1 \
-  --project=my-dev-server-507301 --immutable-tags
+  --repository-format=docker --location="$SANDBOX_REGION" \
+  --project="$SANDBOX_PROJECT" --immutable-tags
 ```
 
-## 3. Build remotely
+Submit the build:
 
 ```sh
 gcloud builds submit . --config=cloudbuild.yaml \
-  --region=us-central1 --project=my-dev-server-507301
+  --region="$SANDBOX_REGION" --project="$SANDBOX_PROJECT" \
+  --substitutions="_REGISTRY=${SANDBOX_REGISTRY}"
 ```
 
-Cloud Build builds and pushes both images. Docker is never invoked locally.
-Record the returned build ID and both image digests. The Dockerfile pins Go to
-1.26.0 but base tags themselves are mutable; pin their resolved digests before a
-production release. This is a development baseline, not a hardened image supply
-chain. Builds run the Go tests inside the remote builder.
+Cloud Build runs the Go tests and builds two images: `control`, containing the
+API binary, and `workspace`, containing the runner, Go toolchain, Git, and shell.
+Both are tagged with the build ID and pushed to the selected repository. The
+build does not deploy anything.
 
-## 4. Render and review the deployment
+Record both image digests from the completed build. Deployment uses immutable
+digest references. The Dockerfile's Go base tag is versioned but remains mutable;
+reproducible release builds also require pinning that base image by digest.
 
-Replace DIGEST with each actual 64-character digest (no angle brackets):
+## 4. Render and apply the deployment
+
+Replace `CONTROL_DIGEST` and `WORKSPACE_DIGEST` below with the corresponding
+64-character SHA-256 hashes, without the `sha256:` prefix:
 
 ```sh
 python3 deploy/render.py \
-  --control-image us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/control@sha256:DIGEST \
-  --workspace-image us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:DIGEST \
+  --control-image "${SANDBOX_REGISTRY}/control@sha256:CONTROL_DIGEST" \
+  --workspace-image "${SANDBOX_REGISTRY}/workspace@sha256:WORKSPACE_DIGEST" \
   > deploy/api.rendered.yaml
 ```
 
-Review `foundation.yaml` and the rendered deployment. After approval:
+The renderer validates image references and writes YAML; it does not contact the
+cluster. The rendered file is ignored by Git. Review `deploy/foundation.yaml`
+and the rendered Deployment before applying them to the selected cluster:
 
 ```sh
 kubectl apply -f deploy/foundation.yaml
@@ -83,27 +117,104 @@ kubectl -n sandbox-control rollout status deployment/sandbox-api --timeout=10m
 kubectl -n sandbox-control port-forward service/sandbox-api 8080:8080
 ```
 
-Namespace creation must precede namespaced server-side dry runs. Verify the
-policies, quota and RBAC exist before starting workspaces. Never use a public
-LoadBalancer for this unauthenticated application API.
+The foundation must exist before the namespaced Deployment can be validated.
+For an upgrade, apply it first so the API has ConfigMap and Pod update permissions.
+The Deployment uses `Recreate` to avoid serving requests through a mixture of old
+Pod-only and new claim-aware APIs. This causes a brief control API interruption;
+runner commands continue, and clients can reconnect by command ID.
+Keep the application API internal: it has no application-level authentication.
 
-## 5. First execution and cleanup
+The template enables one idle Pod with `--warm-pool-size=1`. Set this to zero to
+disable prewarming; reconciliation removes unused pool Pods while active
+workspaces retain their claims. The server accepts targets from zero to 16, but
+the supplied four-Pod quota still bounds total capacity. Do not roll back to a
+Pod-only API while claim-backed workspaces are active.
 
-In another terminal:
+Inspect the reserve and controller logs:
+
+```sh
+kubectl -n sandbox-workspaces get pods \
+  -l 'sandbox-cloud/pool=true,!sandbox-cloud/claim-uid'
+kubectl -n sandbox-control logs deployment/sandbox-api --tail=50
+```
+
+Successful allocation logs include `source=warm` or `source=cold`. Failed
+replenishment appears in reconciliation errors. Process health at `/healthz`
+does not imply that the reserve has a ready Pod.
+
+## 5. Execute a workload
+
+With port-forwarding running, use another terminal:
 
 ```sh
 ./bin/sandbox create --ttl 10m
-# Use the real returned workspace ID:
+# Replace WORKSPACE_ID with the ID returned by create.
 ./bin/sandbox put WORKSPACE_ID ./examples/hello .
 ./bin/sandbox exec --timeout 180s WORKSPACE_ID -- go test ./...
 ./bin/sandbox destroy WORKSPACE_ID
 ```
 
-Then verify timeout/cancellation, API-restart recovery, expiration, quota
-rejection and cross-workspace ingress denial as listed in the root README.
-Deletion is asynchronous. Confirm Pods disappear. Keep the first test small.
+Deletion is asynchronous. Confirm removal with `sandbox list` and, from a
+terminal using the cluster's kubeconfig:
 
-Teardown is a separate destructive operation: inspect both namespaces before
-requesting their deletion. Registry images, build/source storage and the GKE
-cluster survive namespace deletion and may continue incurring charges. Do not
-delete unrelated resources from the existing project.
+```sh
+kubectl -n sandbox-workspaces get pods
+```
+
+## 6. Acceptance checks
+
+Local fake-client tests cannot establish cluster networking, admission, or
+scheduling behavior. Validate the deployed system with these checks:
+
+- Create a workspace and observe scheduling, image pulling, and readiness.
+- Upload `examples/hello` and run `go test ./...` with streamed output.
+- Run a command that exits nonzero and verify the CLI exit status.
+- Disconnect from a long command, reconnect by command ID, then cancel it.
+- Restart the API Deployment while a workspace is active; verify inventory and
+  command access recover without recreating the workspace.
+- Let a short TTL expire; verify the Pod is removed and runner operations fail.
+- Verify one workspace cannot connect to another runner and has no mounted
+  Kubernetes ServiceAccount credentials.
+- Wait for an idle Pod to become Ready, create a workspace, and verify its claim
+  points to that Pod. Check that another idle Pod is provisioned afterward.
+- Submit concurrent creates and verify each claim has a distinct Pod UID. Repeat
+  one request ID and verify it preserves the same assignment and expiration.
+- Exhaust the ready reserve and verify a request falls back to cold allocation.
+- Reach the namespace quota and inspect failures. Existing workspaces should stay
+  usable while replenishment is blocked. Remove test workspaces afterward.
+
+A workspace's physical Pod name is available from its claim:
+
+```sh
+kubectl -n sandbox-workspaces get configmap WORKSPACE_ID \
+  -o jsonpath='{.data.pod}{"\n"}'
+```
+
+Measure request-to-ready latency separately for warm and cold allocations, using
+the allocation log to classify each sample. Include pool replenishment time and
+quota failures. Local runner benchmarks do not measure this improvement.
+
+## Troubleshooting
+
+| Symptom | Check |
+| --- | --- |
+| Connection refused on port 8080 | Port-forward process and selected kubeconfig |
+| Workspace remains pending | Claim phase, reconciliation logs, scheduling events, quota, and node capacity |
+| Warm pool stays empty | Pool setting, current image readiness, quota, and reconciliation errors |
+| `ImagePullBackOff` | Image digest and node identity's repository access |
+| Runner unavailable | Pod readiness, ingress policy, and control-to-workspace routing |
+| Workspace busy | Existing command; wait for completion or cancel it |
+| Retained command not found | IDs, record eviction, and runner termination |
+| GCP permission error | Project ID, active account, and required IAM permissions |
+| Pod remains after TTL | API reconciliation logs, API permissions, and cluster availability |
+
+## Teardown
+
+Set the pool target to zero before teardown so deleted idle Pods are not replaced.
+Destroy active workspaces and verify their Pods and claim ConfigMaps disappear. To remove the service,
+inspect both dedicated namespaces before deleting them; deleting the workspace
+namespace also removes every remaining workspace and its ephemeral files.
+
+Namespace deletion does not delete the GKE cluster, registry images, or build
+source/log storage. Those resources have independent lifecycles and may continue
+to incur charges. Remove only resources dedicated to this deployment.

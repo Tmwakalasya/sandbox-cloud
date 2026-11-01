@@ -26,7 +26,11 @@ func run() error {
 	listen := flag.String("listen", ":8080", "HTTP address inside the cluster")
 	namespace := flag.String("namespace", "sandbox-workspaces", "namespace for workspace Pods")
 	image := flag.String("workspace-image", "", "required immutable workspace image reference")
+	poolSize := flag.Int("warm-pool-size", 0, "target idle workspace Pods; zero disables prewarming")
 	flag.Parse()
+	if *poolSize < 0 || *poolSize > 16 {
+		return errors.New("--warm-pool-size must be between 0 and 16")
+	}
 	if *image == "" {
 		return errors.New("--workspace-image is required")
 	}
@@ -42,7 +46,7 @@ func run() error {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.Proxy = nil
 	transport.ResponseHeaderTimeout = 15 * time.Second
-	api := &cloud.Server{Kube: &cloud.Kubernetes{Client: kube, Namespace: *namespace, Image: *image}, Transport: transport}
+	api := &cloud.Server{Kube: &cloud.Kubernetes{Client: kube, Namespace: *namespace, Image: *image, WarmPoolSize: *poolSize, PoolWake: make(chan struct{}, 1)}, Transport: transport}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	go api.Reconcile(ctx)

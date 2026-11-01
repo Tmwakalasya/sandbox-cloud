@@ -19,7 +19,9 @@ const testID = "sbx-0123456789abcdef01234567"
 func setup(t *testing.T) (*Kubernetes, *fake.Clientset) {
 	t.Helper()
 	c := fake.NewClientset()
-	return &Kubernetes{Client: c.CoreV1(), Namespace: "workspaces", Image: "example.test/workspace@sha256:abcd", Now: func() time.Time { return time.Date(2026, 10, 31, 12, 0, 0, 0, time.UTC) }}, c
+	k := &Kubernetes{Client: c.CoreV1(), Namespace: "workspaces", Image: "example.test/workspace@sha256:abcd", Now: func() time.Time { return time.Date(2026, 10, 31, 12, 0, 0, 0, time.UTC) }}
+	serverMetadata(t, c, k.now)
+	return k, c
 }
 func TestCreateIdempotentAndRestrictedPod(t *testing.T) {
 	k, c := setup(t)
@@ -73,7 +75,7 @@ func TestReapAfterRestartAndOwnership(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p.UID = "original-uid"
+	originalUID := p.UID
 	if _, err := c.CoreV1().Pods(k.Namespace).Update(ctx, p, meta.UpdateOptions{}); err != nil {
 		t.Fatal(err)
 	}
@@ -92,7 +94,7 @@ func TestReapAfterRestartAndOwnership(t *testing.T) {
 	c.PrependReactor("delete", "pods", func(a ktest.Action) (bool, runtime.Object, error) {
 		action := a.(ktest.DeleteAction)
 		opts := action.GetDeleteOptions()
-		if opts.Preconditions == nil || opts.Preconditions.UID == nil || *opts.Preconditions.UID != "original-uid" {
+		if opts.Preconditions == nil || opts.Preconditions.UID == nil || *opts.Preconditions.UID != originalUID {
 			t.Error("deletion missing UID precondition")
 		} else {
 			sawUID = true
