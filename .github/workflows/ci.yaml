@@ -1,0 +1,47 @@
+name: CI
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go mod download
+      - run: make build check
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go mod download
+      - run: go install sigs.k8s.io/kind@v0.31.0
+      - run: make build local-up e2e
+      - name: Collect cluster diagnostics
+        if: always()
+        run: |
+          mkdir -p .local/diagnostics
+          if [ -f .local/kubeconfig ]; then
+            kubectl --kubeconfig .local/kubeconfig --context kind-sandbox-cloud-dev get pods -A -o wide > .local/diagnostics/pods.txt 2>&1 || true
+            kubectl --kubeconfig .local/kubeconfig --context kind-sandbox-cloud-dev get events -A --sort-by=.metadata.creationTimestamp > .local/diagnostics/events.txt 2>&1 || true
+            kubectl --kubeconfig .local/kubeconfig --context kind-sandbox-cloud-dev -n sandbox-control logs deployment/sandbox-api > .local/diagnostics/api.log 2>&1 || true
+            kind export logs --name sandbox-cloud-dev .local/diagnostics/kind || true
+          fi
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-diagnostics
+          path: .local/diagnostics
+      - run: make local-down
+        if: always()
