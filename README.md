@@ -4,6 +4,8 @@
 put files into it, run commands with streamed output, inspect the result, and destroy
 it—or let its lifetime expire.
 
+[View the standalone project landing page](landing/index.html) · [Read the deployment runbook](deploy/README.md)
+
 This project is an engineering exercise in Kubernetes lifecycle management,
 process execution, failure handling, and measurement. Its initial workload is a
 trusted coding task: edit a small Go project and run its tests in a disposable
