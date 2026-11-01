@@ -13,6 +13,7 @@ import (
 
 	typed "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"sandbox-cloud/internal/cloud"
 )
 
@@ -23,14 +24,22 @@ func main() {
 	}
 }
 func run() error {
-	listen := flag.String("listen", ":8080", "HTTP address inside the cluster")
+	listen := flag.String("listen", "", "HTTP address (default :8080 in cluster, 127.0.0.1:8080 with --kubeconfig)")
 	namespace := flag.String("namespace", "sandbox-workspaces", "namespace for workspace Pods")
 	image := flag.String("workspace-image", "", "required immutable workspace image reference")
+	kubeconfig := flag.String("kubeconfig", "", "explicit kubeconfig file; omitted uses in-cluster identity")
+	kubeContext := flag.String("context", "", "context in the explicitly supplied kubeconfig")
 	flag.Parse()
+	if *listen == "" {
+		*listen = ":8080"
+		if *kubeconfig != "" {
+			*listen = "127.0.0.1:8080"
+		}
+	}
 	if *image == "" {
 		return errors.New("--workspace-image is required")
 	}
-	cfg, err := rest.InClusterConfig()
+	cfg, err := kubernetesConfig(*kubeconfig, *kubeContext)
 	if err != nil {
 		return err
 	}
@@ -60,4 +69,17 @@ func run() error {
 	shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	return server.Shutdown(shutdown)
+}
+
+func kubernetesConfig(path, contextName string) (*rest.Config, error) {
+	if path == "" {
+		if contextName != "" {
+			return nil, errors.New("--context requires --kubeconfig")
+		}
+		return rest.InClusterConfig()
+	}
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		&clientcmd.ClientConfigLoadingRules{ExplicitPath: path},
+		&clientcmd.ConfigOverrides{CurrentContext: contextName},
+	).ClientConfig()
 }

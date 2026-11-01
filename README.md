@@ -12,6 +12,8 @@ remote environment.
 Container images are intended to be built and stored in GCP. Local development
 requires Go, not Docker, a local Kubernetes cluster, or downloaded container images.
 
+The optional real Kubernetes development workflow below requires Docker and kind.
+
 ## Implementation and verification status
 
 | Area | Current status |
@@ -21,15 +23,17 @@ requires Go, not Docker, a local Kubernetes cluster, or downloaded container ima
 | Workspace lifecycle | Implemented with Kubernetes Pods and expiry reconciliation |
 | Runner | Implemented: file uploads, serial command execution, streaming, cancellation, deadlines |
 | Integration tests | CLI → HTTP API → runner tested with a simulated Kubernetes client |
+| Local Kubernetes end-to-end | Passed on kind v0.31.0 / Kubernetes v1.35.0 from macOS/arm64: upload, execution, failure, cancellation, timeout, deletion and expiry |
 | Build and race checks | Passed on macOS/arm64; server binaries also cross-compiled for Linux/amd64 |
 | Terminal preview | Executed in a real PTY; simulated state is explicitly labeled |
 | Cloud deployment | **Not deployed or verified against GKE yet** |
 | Build/deployment configuration | Prepared in `Dockerfile`, `cloudbuild.yaml`, and `deploy/`; not applied |
 | Isolation | Trusted workloads only; not a hostile-code sandbox or multi-tenant service |
 
-The tests do not simulate Kubernetes admission, scheduling, networking, kubelet
-behavior, IAM, or image pulling. A passing local test is not evidence that the
-cloud deployment works.
+The simulated-client tests do not exercise Kubernetes admission, scheduling,
+networking, kubelet behavior, IAM, or image pulling. The optional kind test uses
+real local Kubernetes Pods, but does not verify GKE IAM or network isolation.
+Passing local tests are not evidence that the cloud deployment works.
 
 ## Quick start: build and preview locally
 
@@ -60,6 +64,87 @@ sandboxed.
 Do not run `sandbox-runner` directly on your laptop with untrusted commands. It
 executes as its operating-system user; the surrounding Pod provides the intended
 resource and filesystem boundaries.
+
+## Run real workspaces locally
+
+Prerequisites: Go 1.26 or newer, a running Docker engine, `kubectl`, `curl`, and
+[kind](https://kind.sigs.k8s.io/). The tested setup uses kind v0.31.0 and
+Kubernetes v1.35.0. On macOS, run Docker Desktop or OrbStack first.
+
+```sh
+# Optional project-local kind installation; does not change your global tools.
+mkdir -p .local/bin
+GOBIN="$PWD/.local/bin" go install sigs.k8s.io/kind@v0.31.0
+go mod download
+make build
+make local-up
+make local-forward
+```
+
+`local-up` creates the dedicated `sandbox-cloud-dev` cluster, builds and loads
+both container images, and applies the existing foundation and API deployment.
+It writes an isolated kubeconfig to `.local/kubeconfig`; all commands name that
+file and `kind-sandbox-cloud-dev` explicitly. Your default context is unchanged.
+Rerun `local-up` after code changes to rebuild images and restart the API.
+
+With `local-forward` running, use a second terminal:
+
+```sh
+export SANDBOX_API=http://127.0.0.1:18080
+./bin/sandbox create --ttl 10m
+# Replace WORKSPACE_ID with the returned ID.
+./bin/sandbox put WORKSPACE_ID ./examples/hello .
+./bin/sandbox exec --timeout 60s WORKSPACE_ID -- go test ./...
+./bin/sandbox destroy WORKSPACE_ID
+```
+
+The API runs inside the cluster so it can reach private workspace Pod IPs on
+macOS as well as Linux. The default kind network does not enforce NetworkPolicy;
+this setup verifies lifecycle behavior, not network isolation. Use trusted tasks.
+
+To run the automated real-cluster test, stop any existing `local-forward` first:
+
+```sh
+make e2e
+```
+
+The test starts its own loopback port-forward and runs the compiled CLI against
+real Pods. It verifies upload, Go tests, retained files, nonzero exit handling,
+command timeout/cancellation, explicit deletion, and expiry cleanup. It requires
+an explicit test API, kubeconfig and context, and never falls back to your default
+cluster. Each test workspace is cleaned up even when an assertion fails.
+
+Remove only the dedicated development cluster when finished:
+
+```sh
+make local-down
+```
+
+### Run the API with explicit Kubernetes credentials
+
+`sandboxd` retains in-cluster ServiceAccount authentication by default. For host
+or custom development setups, explicitly select a kubeconfig and optionally a
+context:
+
+```sh
+./bin/sandboxd --listen=127.0.0.1:8080 \
+  --kubeconfig=/absolute/path/to/config --context=development \
+  --namespace=sandbox-workspaces --workspace-image=YOUR_WORKSPACE_IMAGE
+```
+
+The API host must be able to reach workspace Pod IPs. This is generally not true
+for a macOS host with a container-based cluster; use `local-up` for that setup.
+`--context` requires `--kubeconfig`; the API never implicitly reads your laptop's
+default kubeconfig or switches its current context.
+With `--kubeconfig`, the HTTP listener defaults to loopback. In-cluster mode keeps
+its `:8080` default. An explicit `--listen` overrides either default.
+
+### Continuous integration
+
+`.github/workflows/ci.yaml` runs build, vet, unit/integration tests and race tests
+on pushes and pull requests. A separate job builds the images, creates a kind
+cluster, and runs the same `make e2e` workflow. Failures upload cluster events,
+Pod listings, API logs and kind logs. CI always attempts cluster teardown.
 
 ## Architecture
 
