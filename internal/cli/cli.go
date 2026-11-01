@@ -26,6 +26,8 @@ const usage = `sandbox — disposable remote workspaces
 
 Usage: sandbox [--api URL] [--json] COMMAND [OPTIONS]
 
+  run [OPTIONS] LOCAL_DIR -- COMMAND [ARGS...]
+                                    Upload, execute, and clean up a workspace
   create  [--ttl 20m] [--wait 3m]     Create and wait for a workspace
   list                              List workspace status
   inspect WORKSPACE                 Inspect one workspace
@@ -41,7 +43,8 @@ Usage: sandbox [--api URL] [--json] COMMAND [OPTIONS]
 
 Global flags go before the command; command flags go before positional args.
 API defaults to SANDBOX_API or http://127.0.0.1:8080 via kubectl port-forward.
-Closing the CLI does not cancel commands or destroy workspaces.
+Closing exec/logs does not cancel commands or destroy workspaces.
+run requests workspace deletion on completion or interruption unless --keep is set.
 `
 
 type ExitError struct {
@@ -128,6 +131,8 @@ func Run(ctx context.Context, args []string, out, errout io.Writer) error {
 		return err
 	}
 	switch args[0] {
+	case "run":
+		return runTask(ctx, c, args[1:], *machine, out, errout)
 	case "create":
 		f := flags("create", errout)
 		ttl := f.Duration("ttl", 20*time.Minute, "workspace lifetime")
@@ -358,7 +363,7 @@ func stream(ctx context.Context, c *client.Client, id, command string, machine b
 	}
 	if r.State != "succeeded" {
 		code := 1
-		if r.ExitCode != nil && *r.ExitCode > 0 && *r.ExitCode < 126 {
+		if r.ExitCode != nil && *r.ExitCode > 0 && *r.ExitCode <= 255 {
 			code = *r.ExitCode
 		}
 		return &ExitError{code, "command " + r.State + ": " + r.Error}

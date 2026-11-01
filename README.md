@@ -61,6 +61,48 @@ Do not run `sandbox-runner` directly on your laptop with untrusted commands. It
 executes as its operating-system user; the surrounding Pod provides the intended
 resource and filesystem boundaries.
 
+## Run a task in one command
+
+With the control API reachable (for example through kubectl port-forward):
+
+```sh
+./bin/sandbox run ./examples/hello -- go test ./...
+./bin/sandbox run --keep ./examples/hello -- go test ./...
+./bin/sandbox --json run --timeout 180s ./examples/hello -- go test ./...
+```
+
+`run` creates a workspace, waits for readiness, uploads the directory into
+`/workspace`, executes the command with streamed output, and requests workspace
+deletion. It returns the command's nonzero exit code. Flags go before LOCAL_DIR;
+the `--` separator before the command is required. Arguments are passed directly;
+use `sh -c` explicitly for shell expressions.
+
+Options are `--ttl` (20m by default, 1m–24h), `--wait` (3m by default, positive),
+`--timeout` (60s by default, 1s–1h), and `--keep`. The TTL starts at workspace
+creation and includes readiness and upload time; it can end a long-running task
+before its command timeout.
+
+Cleanup is attempted on success, failure, and Ctrl+C/SIGTERM, including when a
+create response is lost. The delete request has its own 15-second timeout so
+cancelling execution does not cancel cleanup. Deletion is asynchronous. If cleanup
+fails, the command reports the error and a retry command; TTL remains the fallback.
+Forced termination such as SIGKILL cannot run client-side cleanup.
+
+`--keep` skips deletion on success, failure, or interruption and prints the
+workspace ID and an inspect command to stderr. It does not extend the TTL. Without
+`--keep`, an interruption destroys the workspace rather than preserving the
+running command. `--json` emits the existing command-event format on stdout;
+workspace IDs, progress and cleanup messages go to stderr.
+
+The upload uses the same rules as `put`: regular files only, no symlinks, 8 MiB
+per file. It uploads all files beneath the directory, including dotfiles; there
+is no automatic `.gitignore` filtering. Choose the task directory accordingly.
+
+`tests/e2e/run_test.go` is an opt-in real-cluster test for automatic deletion,
+exit-code propagation, retained workspaces, and interruption. Build the CLI and
+provide `SANDBOX_E2E_API`, `SANDBOX_E2E_KUBECONFIG` (an absolute path) and
+`SANDBOX_E2E_CONTEXT`, then run `go test -tags=e2e -v ./tests/e2e`.
+
 ## Architecture
 
 ```mermaid
