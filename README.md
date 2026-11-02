@@ -36,7 +36,8 @@ make build
 ./bin/sandbox preview
 ```
 
-`make build` produces `bin/sandbox`, `bin/sandboxd`, and `bin/sandbox-runner`.
+`make build` produces `bin/sandbox`, `bin/sandboxd`, `bin/sandbox-runner`, and
+the operator benchmark tool `bin/sandbox-bench`.
 `preview` runs an animated simulation offline. Build and check targets disable
 module and toolchain downloads, so dependencies must be installed first.
 
@@ -119,7 +120,7 @@ or a newly created Pod.
 
 ### Warm pool
 
-The supplied deployment sets `--warm-pool-size=1`. The server flag defaults to
+The supplied deployment sets `--warm-pool-size=2`. The server flag defaults to
 zero, which disables prewarming. The target counts both ready and starting idle
 Pods; it does not guarantee that a ready Pod is always available.
 
@@ -345,8 +346,9 @@ filesystem quotas. Cluster admission can adjust resource requests.
 The supplied deployment separates control and workspace namespaces, restricts
 runner ingress to control API Pods, and grants the API namespaced Pod
 `create/get/list/update/delete` permissions on Pods and ConfigMaps. Its
-ResourceQuota caps the workspace namespace at **four Pod objects** and **16 claim
-ConfigMaps**. Idle and terminal Pods count until deleted.
+ResourceQuota caps the workspace namespace at **12 Pod objects** and **16 ConfigMap
+objects**, including Kubernetes-created ConfigMaps. Idle and terminal Pods count
+until deleted.
 There is no application admission queue. See the
 [deployment guide](deploy/README.md) for the manifests and capacity limits.
 
@@ -408,6 +410,19 @@ Cluster benchmarks should separately measure request-to-ready and command-start
 latency, distinguish cold and cached images, and record failures alongside
 p50/p95/p99. Record image digest, resource settings, and concurrency. CLI readiness
 polling has one-second granularity and is unsuitable for precise startup timing.
+
+Use [`sandbox-bench`](docs/benchmark.md) for concurrent live-cluster bursts. It
+measures HTTP request-to-ready and command round-trip time, classifies allocations
+from claim and Pod metadata, checks exclusive assignment, and cleans up its own
+workspaces. Reports retain failed attempts alongside per-source p50/p95 and
+admitted resource settings. The tool does not provision capacity or change the
+pool target; see the guide before running it against a cluster.
+
+In the [recorded GKE run](docs/benchmark.md#recorded-gke-run-november-1-2026), three
+bursts of ten workspaces completed 30/30 attempts: six warm allocations had a
+494 ms readiness median; 24 cold allocations had an 8,744 ms median. These small,
+observational groups include polling and network overhead. The guide records the
+failed client-limiter baseline, image digests, admitted resources, and raw reports.
 
 ## Development
 

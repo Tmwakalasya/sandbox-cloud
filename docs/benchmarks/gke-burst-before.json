@@ -1,0 +1,164 @@
+{
+  "started_at": "2026-11-02T01:09:49.720772Z",
+  "finished_at": "2026-11-02T01:10:26.46341Z",
+  "kubernetes_context": "gke_my-dev-server-507301_us-central1_sandbox-cluster1",
+  "options": {
+    "concurrency": 10,
+    "rounds": 3,
+    "minimum_ready_reserve": 2,
+    "ttl_ns": 900000000000,
+    "readiness_timeout_ns": 300000000000,
+    "poll_interval_ns": 250000000,
+    "hold_after_burst_ns": 0,
+    "namespace": "sandbox-workspaces"
+  },
+  "quota": {
+    "hard": {
+      "count/configmaps": "16",
+      "count/pods": "12",
+      "limits.cpu": "12",
+      "limits.ephemeral-storage": "12Gi",
+      "limits.memory": "6Gi",
+      "requests.cpu": "12",
+      "requests.ephemeral-storage": "12Gi",
+      "requests.memory": "6Gi"
+    }
+  },
+  "bursts": [
+    {
+      "number": 1,
+      "ready_reserve_before": [
+        "warm-7343893e649bbcfd269847e0",
+        "warm-9d25ba190a79e66a3254d1cd"
+      ],
+      "ready_reserve_after": [
+        "warm-580f53342efc49b66288bf39",
+        "warm-efd5e1b2946e3e57bbc9ede4"
+      ],
+      "post_cleanup_reserve_wait_ms": 5994.137,
+      "samples": [
+        {
+          "id": "sbx-30aebf5e981f59ddba9fdf49",
+          "source": "unknown",
+          "request_to_ready_ms": null,
+          "command_round_trip_ms": null,
+          "error": "create/readiness: HTTP 502: client rate limiter Wait returned an error: rate: Wait(n=1) would exceed context deadline; cannot verify active claim and Pod ownership"
+        },
+        {
+          "id": "sbx-dce8b71b3576580d37add53f",
+          "source": "unknown",
+          "request_to_ready_ms": null,
+          "command_round_trip_ms": null,
+          "error": "create/readiness: HTTP 502: client rate limiter Wait returned an error: rate: Wait(n=1) would exceed context deadline; cannot verify active claim and Pod ownership"
+        },
+        {
+          "id": "sbx-14ef6b2ffb58c2ce160d6807",
+          "source": "unknown",
+          "request_to_ready_ms": null,
+          "command_round_trip_ms": null,
+          "error": "create/readiness: HTTP 502: client rate limiter Wait returned an error: rate: Wait(n=1) would exceed context deadline; cannot verify active claim and Pod ownership"
+        },
+        {
+          "id": "sbx-1b6b8f757515743a77d5938d",
+          "source": "unknown",
+          "request_to_ready_ms": null,
+          "command_round_trip_ms": null,
+          "error": "create/readiness: HTTP 502: client rate limiter Wait returned an error: rate: Wait(n=1) would exceed context deadline; cannot verify active claim and Pod ownership"
+        },
+        {
+          "id": "sbx-91fcf08454040fb778b005fd",
+          "source": "warm",
+          "request_to_ready_ms": null,
+          "command_round_trip_ms": null,
+          "pod": "warm-9d25ba190a79e66a3254d1cd",
+          "pod_uid": "dabdfc39-5ce7-4e17-b273-0a2166917b0d",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          },
+          "error": "create/readiness: HTTP 502: client rate limiter Wait returned an error: rate: Wait(n=1) would exceed context deadline"
+        },
+        {
+          "id": "sbx-521639e9d71c7f04b78ff1f4",
+          "source": "unknown",
+          "request_to_ready_ms": null,
+          "command_round_trip_ms": null,
+          "error": "create/readiness: HTTP 502: client rate limiter Wait returned an error: rate: Wait(n=1) would exceed context deadline; cannot verify active claim and Pod ownership"
+        },
+        {
+          "id": "sbx-af0cf6c0899888c6a20a8a3d",
+          "source": "unknown",
+          "request_to_ready_ms": null,
+          "command_round_trip_ms": null,
+          "error": "create/readiness: HTTP 502: client rate limiter Wait returned an error: rate: Wait(n=1) would exceed context deadline; cannot verify active claim and Pod ownership"
+        },
+        {
+          "id": "sbx-6fc4162b045929aa961c8296",
+          "source": "unknown",
+          "request_to_ready_ms": null,
+          "command_round_trip_ms": null,
+          "error": "create/readiness: HTTP 502: client rate limiter Wait returned an error: rate: Wait(n=1) would exceed context deadline; cannot verify active claim and Pod ownership"
+        },
+        {
+          "id": "sbx-7cd2e2852025fd09191e9778",
+          "source": "unknown",
+          "request_to_ready_ms": null,
+          "command_round_trip_ms": null,
+          "error": "create/readiness: HTTP 502: client rate limiter Wait returned an error: rate: Wait(n=1) would exceed context deadline; cannot verify active claim and Pod ownership"
+        },
+        {
+          "id": "sbx-cb585e61ddae60a4f81897db",
+          "source": "warm",
+          "request_to_ready_ms": 6276.030458,
+          "command_round_trip_ms": 5192.773416,
+          "pod": "warm-7343893e649bbcfd269847e0",
+          "pod_uid": "97183a2f-658f-4e98-b8df-4cb00d55a871",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "attempts": 10,
+    "succeeded": 1,
+    "failures": 9,
+    "cleanup_errors": 0,
+    "warm_allocations": 2,
+    "cold_allocations": 0,
+    "unknown_allocations": 8,
+    "warm_hit_rate_among_classified": 1,
+    "readiness_by_source": {
+      "warm": {
+        "samples": 1,
+        "p50_ms": 6276.030458,
+        "p95_ms": 6276.030458
+      }
+    }
+  },
+  "error": "burst contained failures; see per-workspace results"
+}

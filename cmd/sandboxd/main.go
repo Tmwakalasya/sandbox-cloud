@@ -39,6 +39,12 @@ func run() error {
 		return err
 	}
 	cfg.Timeout = 15 * time.Second
+	// A workspace allocation performs multiple claim/Pod operations. The
+	// client-go defaults (5 QPS, burst 10) made a ten-workspace burst exhaust
+	// the HTTP handler's 15-second deadline in the local token bucket. Keep a
+	// bounded budget for concurrent allocations, polling, and reconciliation.
+	cfg.QPS = 50
+	cfg.Burst = 100
 	kube, err := typed.NewForConfig(cfg)
 	if err != nil {
 		return err

@@ -28,7 +28,7 @@ spec:
           args:
             - --listen=:8080
             - --namespace=sandbox-workspaces
-            - --warm-pool-size=1
+            - --warm-pool-size=2
             - --workspace-image=WORKSPACE_IMAGE
           ports:
             - name: http

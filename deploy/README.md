@@ -10,9 +10,10 @@ image downloads are required. Run commands from the repository root.
   dedicated ServiceAccount.
 - `sandbox-workspaces`: disposable Pods, workspace claim ConfigMaps, and a Role
   granting the API `create/get/list/update/delete` on those two resource types.
-- ResourceQuota: four Pod objects, 16 claim ConfigMaps, four CPU limits, and 2 GiB
-  memory limits. Idle and terminal Pods count until deleted.
-- Warm pool: target one unused Pod, with cold allocation when no ready Pod is
+- ResourceQuota: 12 Pod objects, 16 ConfigMap objects, 12 CPU limits, and 6 GiB
+  memory limits. Kubernetes-created ConfigMaps consume quota too; idle and
+  terminal Pods count until deleted.
+- Warm pool: target two unused Pods, with cold allocation when no ready Pod is
   available. Replenishment can be blocked by the same namespace quota.
 - NetworkPolicies: runner ingress is limited to API Pods. Ordinary Pod ingress to
   the API is denied; clients connect through Kubernetes port-forwarding.
@@ -124,10 +125,10 @@ Pod-only and new claim-aware APIs. This causes a brief control API interruption;
 runner commands continue, and clients can reconnect by command ID.
 Keep the application API internal: it has no application-level authentication.
 
-The template enables one idle Pod with `--warm-pool-size=1`. Set this to zero to
+The template enables two idle Pods with `--warm-pool-size=2`. Set this to zero to
 disable prewarming; reconciliation removes unused pool Pods while active
 workspaces retain their claims. The server accepts targets from zero to 16, but
-the supplied four-Pod quota still bounds total capacity. Do not roll back to a
+the supplied 12-Pod quota still bounds total capacity. Do not roll back to a
 Pod-only API while claim-backed workspaces are active.
 
 Inspect the reserve and controller logs:

@@ -1,0 +1,783 @@
+{
+  "started_at": "2026-11-02T01:20:08.558789Z",
+  "finished_at": "2026-11-02T01:21:12.538497Z",
+  "kubernetes_context": "gke_my-dev-server-507301_us-central1_sandbox-cluster1",
+  "options": {
+    "concurrency": 10,
+    "rounds": 3,
+    "minimum_ready_reserve": 2,
+    "ttl_ns": 900000000000,
+    "readiness_timeout_ns": 300000000000,
+    "poll_interval_ns": 250000000,
+    "hold_after_burst_ns": 0,
+    "namespace": "sandbox-workspaces"
+  },
+  "quota": {
+    "hard": {
+      "count/configmaps": "16",
+      "count/pods": "12",
+      "limits.cpu": "12",
+      "limits.ephemeral-storage": "12Gi",
+      "limits.memory": "6Gi",
+      "requests.cpu": "12",
+      "requests.ephemeral-storage": "12Gi",
+      "requests.memory": "6Gi"
+    }
+  },
+  "bursts": [
+    {
+      "number": 1,
+      "ready_reserve_before": [
+        "warm-580f53342efc49b66288bf39",
+        "warm-efd5e1b2946e3e57bbc9ede4"
+      ],
+      "ready_reserve_after": [
+        "warm-06db70bd81dcbadd53f367cc",
+        "warm-e46fd73358dc0f7be9c6c8e3"
+      ],
+      "post_cleanup_reserve_wait_ms": 514.364917,
+      "samples": [
+        {
+          "id": "sbx-29315ebdb286eaf89a3dcd17",
+          "source": "cold",
+          "request_to_ready_ms": 13206.347917,
+          "command_round_trip_ms": 164.436375,
+          "pod": "sbx-29315ebdb286eaf89a3dcd17",
+          "pod_uid": "547da453-e807-42d9-8e77-a072fe0ddaec",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-b2eed592-bhhn",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-f1bd11896841a8118f9a855c",
+          "source": "cold",
+          "request_to_ready_ms": 18100.101958,
+          "command_round_trip_ms": 350.577458,
+          "pod": "sbx-f1bd11896841a8118f9a855c",
+          "pod_uid": "cf2bac87-f9f6-4391-a9e8-9476ae7999b1",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-4db4e420c909eb9d4478a2ff",
+          "source": "cold",
+          "request_to_ready_ms": 11094.838209,
+          "command_round_trip_ms": 386.491666,
+          "pod": "sbx-4db4e420c909eb9d4478a2ff",
+          "pod_uid": "ca456653-d171-4585-9548-51ca63445c81",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-350dda251560fbb896c2b714",
+          "source": "warm",
+          "request_to_ready_ms": 693.170125,
+          "command_round_trip_ms": 223.715625,
+          "pod": "warm-efd5e1b2946e3e57bbc9ede4",
+          "pod_uid": "83abd09c-18f8-4f46-b2ed-f0245219148c",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-93fa81f038ce82afe985728c",
+          "source": "cold",
+          "request_to_ready_ms": 4882.126333,
+          "command_round_trip_ms": 167.357625,
+          "pod": "sbx-93fa81f038ce82afe985728c",
+          "pod_uid": "ebaac518-d116-487d-a285-8c65cbcc127d",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-a00d99cbaab3a3691983f70a",
+          "source": "cold",
+          "request_to_ready_ms": 11431.643167,
+          "command_round_trip_ms": 840.067583,
+          "pod": "sbx-a00d99cbaab3a3691983f70a",
+          "pod_uid": "5a0b886e-b043-4925-8633-7df4ee19bf39",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-f7cae1a0bcfbcb756d7dab58",
+          "source": "cold",
+          "request_to_ready_ms": 9770.939625,
+          "command_round_trip_ms": 177.947834,
+          "pod": "sbx-f7cae1a0bcfbcb756d7dab58",
+          "pod_uid": "10362355-26d8-4648-b319-d4005822dbe5",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-b2eed592-bhhn",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-7d602de1ae25e7f489d7eada",
+          "source": "cold",
+          "request_to_ready_ms": 9045.696875,
+          "command_round_trip_ms": 195.266583,
+          "pod": "sbx-7d602de1ae25e7f489d7eada",
+          "pod_uid": "a5d93322-86cc-4824-8b7f-2d2823c48950",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-b2eed592-bhhn",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-bb9e7c3cdf556916ff5a8ef3",
+          "source": "cold",
+          "request_to_ready_ms": 11225.74425,
+          "command_round_trip_ms": 328.853708,
+          "pod": "sbx-bb9e7c3cdf556916ff5a8ef3",
+          "pod_uid": "cbe5ba2b-f50b-448c-8d06-4758f63c7d26",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-65aa732827c8f71bbb0a5d94",
+          "source": "warm",
+          "request_to_ready_ms": 494.437333,
+          "command_round_trip_ms": 361.994,
+          "pod": "warm-580f53342efc49b66288bf39",
+          "pod_uid": "312238e2-5bec-4086-81c6-f01701282806",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "ready_reserve_before": [
+        "warm-06db70bd81dcbadd53f367cc",
+        "warm-e46fd73358dc0f7be9c6c8e3"
+      ],
+      "ready_reserve_after": [
+        "warm-cbd2b47d1f3c6ac1be7b6658",
+        "warm-eaceef3775f9c7bf614e5ddd"
+      ],
+      "post_cleanup_reserve_wait_ms": 381.004125,
+      "samples": [
+        {
+          "id": "sbx-fa03c4325556d44fb6d0e6dc",
+          "source": "cold",
+          "request_to_ready_ms": 8743.518209,
+          "command_round_trip_ms": 532.12,
+          "pod": "sbx-fa03c4325556d44fb6d0e6dc",
+          "pod_uid": "1030b53e-244d-4707-a29d-0f9136ea2cec",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-b810948a8145beff71bf2f5a",
+          "source": "cold",
+          "request_to_ready_ms": 5798.524167,
+          "command_round_trip_ms": 612.663334,
+          "pod": "sbx-b810948a8145beff71bf2f5a",
+          "pod_uid": "93d657c7-d078-456a-b37b-8b9cc429fed0",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-53ea2ff25571effb9457ea01",
+          "source": "warm",
+          "request_to_ready_ms": 873.888875,
+          "command_round_trip_ms": 173.272125,
+          "pod": "warm-e46fd73358dc0f7be9c6c8e3",
+          "pod_uid": "1e089f68-cc1c-4f69-9e88-e573c0c04e55",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-929511f82484585765dede15",
+          "source": "cold",
+          "request_to_ready_ms": 5431.387334,
+          "command_round_trip_ms": 162.695,
+          "pod": "sbx-929511f82484585765dede15",
+          "pod_uid": "a6901114-0964-4933-9d13-9546c4662fcd",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-b2eed592-bhhn",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-d67f8f12ed9450d932631b81",
+          "source": "cold",
+          "request_to_ready_ms": 9700.906958,
+          "command_round_trip_ms": 416.747042,
+          "pod": "sbx-d67f8f12ed9450d932631b81",
+          "pod_uid": "7eb33b49-a843-4c36-8a24-51febc582123",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-be92984f061ec197eabb9b8b",
+          "source": "cold",
+          "request_to_ready_ms": 9048.581958,
+          "command_round_trip_ms": 302.602375,
+          "pod": "sbx-be92984f061ec197eabb9b8b",
+          "pod_uid": "fd31b854-d4a7-4155-8b47-5cce7fabca3b",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-e70e92b8bd85c6a6ac1a3a2d",
+          "source": "warm",
+          "request_to_ready_ms": 360.539917,
+          "command_round_trip_ms": 440.990542,
+          "pod": "warm-06db70bd81dcbadd53f367cc",
+          "pod_uid": "a9e7879b-d56a-4c5b-999c-a36c159f19ae",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-cfb9d51b3482ac2a81c51dd0",
+          "source": "cold",
+          "request_to_ready_ms": 5074.706417,
+          "command_round_trip_ms": 217.3225,
+          "pod": "sbx-cfb9d51b3482ac2a81c51dd0",
+          "pod_uid": "b48f3478-b28f-4d2b-9c6b-bfd10671ed69",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-b2eed592-bhhn",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-2c5d7b84532af07ab3f972ad",
+          "source": "cold",
+          "request_to_ready_ms": 8752.0315,
+          "command_round_trip_ms": 532.099209,
+          "pod": "sbx-2c5d7b84532af07ab3f972ad",
+          "pod_uid": "6b2125f6-b0ed-4243-871d-b2eeef81d37b",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-076fb15ddf1df8edf3dfb015",
+          "source": "cold",
+          "request_to_ready_ms": 4837.864958,
+          "command_round_trip_ms": 425.362208,
+          "pod": "sbx-076fb15ddf1df8edf3dfb015",
+          "pod_uid": "0cabd624-5153-4f62-b3f1-fa040f0f6de1",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-b2eed592-bhhn",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "ready_reserve_before": [
+        "warm-cbd2b47d1f3c6ac1be7b6658",
+        "warm-eaceef3775f9c7bf614e5ddd"
+      ],
+      "ready_reserve_after": [
+        "warm-1a6dac73f338934d887e1c40",
+        "warm-f639f20459b7bf6ea5d2619d"
+      ],
+      "post_cleanup_reserve_wait_ms": 433.902166,
+      "samples": [
+        {
+          "id": "sbx-dc50d8d6a558fc08e00df843",
+          "source": "cold",
+          "request_to_ready_ms": 6657.635334,
+          "command_round_trip_ms": 288.679625,
+          "pod": "sbx-dc50d8d6a558fc08e00df843",
+          "pod_uid": "dd269b10-9cb5-44a3-b97b-1dee8d17d2dd",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-ad72408a3270b774e74fad58",
+          "source": "warm",
+          "request_to_ready_ms": 398.441959,
+          "command_round_trip_ms": 873.57575,
+          "pod": "warm-cbd2b47d1f3c6ac1be7b6658",
+          "pod_uid": "d5f561d7-a244-4004-84f9-5a8b321e41b8",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-96bce9ffabd0c88811120789",
+          "source": "cold",
+          "request_to_ready_ms": 9332.789542,
+          "command_round_trip_ms": 916.365625,
+          "pod": "sbx-96bce9ffabd0c88811120789",
+          "pod_uid": "41eaa6bc-f529-4c00-acde-8ba2faa70fe1",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-69bc396a4bc2a4f8ca8b5929",
+          "source": "cold",
+          "request_to_ready_ms": 4813.23075,
+          "command_round_trip_ms": 327.502875,
+          "pod": "sbx-69bc396a4bc2a4f8ca8b5929",
+          "pod_uid": "98e2075f-082b-441a-8c5b-79c1f9770fcd",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-b2eed592-bhhn",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-9d613e59a61945b6ac5a0082",
+          "source": "cold",
+          "request_to_ready_ms": 5671.228459,
+          "command_round_trip_ms": 147.446916,
+          "pod": "sbx-9d613e59a61945b6ac5a0082",
+          "pod_uid": "3011a1e2-3c36-48a6-b066-ec8ea5aadb82",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-b2eed592-bhhn",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-9ab0361de5df5cd58163f9e8",
+          "source": "cold",
+          "request_to_ready_ms": 8602.270083,
+          "command_round_trip_ms": 419.347042,
+          "pod": "sbx-9ab0361de5df5cd58163f9e8",
+          "pod_uid": "760e830f-92cf-4d55-9806-3913013cb50c",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-29e6e9d30b751065c83e64df",
+          "source": "warm",
+          "request_to_ready_ms": 706.385584,
+          "command_round_trip_ms": 1638.980875,
+          "pod": "warm-eaceef3775f9c7bf614e5ddd",
+          "pod_uid": "795d86c1-e247-4980-b9d3-9e9f3fa9b968",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-6c4c8e01e369e24a0e0b668b",
+          "source": "cold",
+          "request_to_ready_ms": 8499.030208,
+          "command_round_trip_ms": 259.221584,
+          "pod": "sbx-6c4c8e01e369e24a0e0b668b",
+          "pod_uid": "1e448ffa-cc7e-4d9e-9190-18617934f900",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-0033f05925626758309ac74e",
+          "source": "cold",
+          "request_to_ready_ms": 5680.920459,
+          "command_round_trip_ms": 145.687041,
+          "pod": "sbx-0033f05925626758309ac74e",
+          "pod_uid": "012398f4-94d1-4324-974b-0e0e92d77e8e",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-b2eed592-bhhn",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        },
+        {
+          "id": "sbx-350d4ab3c4b4ac1fdec689f4",
+          "source": "cold",
+          "request_to_ready_ms": 9770.417625,
+          "command_round_trip_ms": 711.043458,
+          "pod": "sbx-350d4ab3c4b4ac1fdec689f4",
+          "pod_uid": "1ebfceca-2b8b-4464-9b8c-ec13a898bd21",
+          "node": "gk3-sandbox-cluster1-nap-1txp3y79-a86fd26e-w8mr",
+          "image": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "image_id": "us-central1-docker.pkg.dev/my-dev-server-507301/sandbox-cloud/workspace@sha256:c77fb2929924e2f67cb45cd0432e59e2f9c99817fde9976ad12ce5634f51ceed",
+          "admitted_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "128Mi",
+              "memory": "512Mi"
+            },
+            "requests": {
+              "cpu": "100m",
+              "ephemeral-storage": "128Mi",
+              "memory": "128Mi"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "attempts": 30,
+    "succeeded": 30,
+    "failures": 0,
+    "cleanup_errors": 0,
+    "warm_allocations": 6,
+    "cold_allocations": 24,
+    "unknown_allocations": 0,
+    "warm_hit_rate_among_classified": 0.2,
+    "readiness_by_source": {
+      "cold": {
+        "samples": 24,
+        "p50_ms": 8743.518209,
+        "p95_ms": 13206.347917
+      },
+      "warm": {
+        "samples": 6,
+        "p50_ms": 494.437333,
+        "p95_ms": 873.888875
+      }
+    }
+  }
+}
