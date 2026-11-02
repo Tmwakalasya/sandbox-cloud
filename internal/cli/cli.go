@@ -27,6 +27,8 @@ const usage = `sandbox — disposable remote workspaces
 Usage: sandbox [--api URL] [--json] COMMAND [OPTIONS]
 
   create  [--ttl 20m] [--wait 3m]     Create and wait for a workspace
+  run --repo HTTPS_URL --ref COMMIT [--timeout 5m] -- COMMAND [ARGS...]
+                                    Checkout, execute, and clean up a workspace
   list                              List workspace status
   inspect WORKSPACE                 Inspect one workspace
   watch [WORKSPACE]                 Live workspace dashboard
@@ -41,7 +43,7 @@ Usage: sandbox [--api URL] [--json] COMMAND [OPTIONS]
 
 Global flags go before the command; command flags go before positional args.
 API defaults to SANDBOX_API or http://127.0.0.1:8080 via kubectl port-forward.
-Closing the CLI does not cancel commands or destroy workspaces.
+Closing the CLI normally leaves workspaces running; run requests cleanup on exit.
 `
 
 type ExitError struct {
@@ -128,6 +130,8 @@ func Run(ctx context.Context, args []string, out, errout io.Writer) error {
 		return err
 	}
 	switch args[0] {
+	case "run":
+		return runRepository(ctx, c, args[1:], *machine, out, errout)
 	case "create":
 		f := flags("create", errout)
 		ttl := f.Duration("ttl", 20*time.Minute, "workspace lifetime")
@@ -321,6 +325,10 @@ func pause(ctx context.Context, d time.Duration) error {
 	}
 }
 func stream(ctx context.Context, c *client.Client, id, command string, machine bool, out, errout io.Writer) error {
+	return streamCommand(ctx, c, id, command, machine, true, out, errout)
+}
+
+func streamCommand(ctx context.Context, c *client.Client, id, command string, machine, reconnect bool, out, errout io.Writer) error {
 	r, err := c.Events(ctx, id, command, func(e runner.Event) error {
 		if machine {
 			return jsonOut(out, e)
@@ -340,7 +348,10 @@ func stream(ctx context.Context, c *client.Client, id, command string, machine b
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("%w; reconnect with sandbox logs %s %s", err, id, command)
+		if reconnect {
+			return fmt.Errorf("%w; reconnect with sandbox logs %s %s", err, id, command)
+		}
+		return err
 	}
 	if !machine {
 		elapsed := time.Since(r.StartedAt)

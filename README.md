@@ -68,6 +68,46 @@ The CLI defaults to `http://127.0.0.1:8080`. Override it with `SANDBOX_API` or
 The application API has no authentication and is intended to stay internal,
 accessed through Kubernetes port-forwarding.
 
+### Run a repository at a pinned commit
+
+For a public HTTPS repository, `run` owns the workspace lifecycle:
+
+```sh
+./bin/sandbox run \
+  --repo https://github.com/OWNER/REPOSITORY.git \
+  --ref FULL_40_CHARACTER_COMMIT_SHA \
+  --timeout 5m -- go test ./...
+```
+
+It creates a workspace, waits for readiness, fetches the exact commit at depth
+one, checks out detached HEAD, executes the command inside the checkout, streams
+output, and requests workspace deletion. Branches, tags, embedded credentials,
+and repository URLs with query strings are rejected before allocation. The remote
+Git server must allow fetching the requested commit. Command arguments are passed
+literally; use an explicit `sh -c` for shell syntax.
+
+The default `--wait 3m` bounds allocation and readiness. `--timeout 5m` bounds Git
+setup and execution together. `--ttl 20m` is the cleanup backstop; it must cover
+wait + timeout + one minute. Cleanup also runs after failures and Ctrl-C, using a
+separate 30-second deadline, including when the create response is lost. Deletion
+is asynchronous: the CLI reports a deletion request, not verified Pod removal.
+Abrupt process termination can prevent cleanup; TTL still applies.
+
+Use `--keep-on-failure` to retain a failed or interrupted workspace until its TTL
+for inspection. Successful runs are still deleted. Interrupted retained commands
+may continue until their execution deadline. Workspace and command IDs are printed
+before requests. `sandbox inspect`, `logs`, and `result` work while the retained
+workspace exists. With default cleanup, output must be captured by the caller;
+there is no persistent run history after deletion.
+
+Global `--json` emits NDJSON lifecycle records (`allocating`, `executing`, and
+`cleanup` or `retained`) alongside the existing runner output/result events. A
+successful command result can still be followed by a cleanup failure and nonzero
+CLI exit status. Git hooks, interactive authentication, submodules, redirects,
+and Git LFS downloads are not enabled by this workflow. Dependencies are prepared
+only if the submitted command does so. Warm Pods accelerate allocation; repository
+and dependency caches are not part of this version. Run only trusted code.
+
 ## Architecture
 
 ```text
@@ -252,6 +292,7 @@ Global flags precede the command; command flags precede positional arguments.
 | Command | Purpose |
 | --- | --- |
 | `sandbox create --ttl 20m --wait 3m` | Create a workspace and wait for readiness |
+| `sandbox run --repo HTTPS_URL --ref COMMIT -- COMMAND [ARGS...]` | Checkout a pinned commit, execute, and request cleanup |
 | `sandbox list` | List managed workspaces |
 | `sandbox inspect WORKSPACE` | Inspect state, expiration, node, and resources |
 | `sandbox watch [WORKSPACE]` | Watch one workspace or the inventory |
@@ -263,7 +304,7 @@ Global flags precede the command; command flags precede positional arguments.
 | `sandbox destroy WORKSPACE` | Request workspace deletion |
 | `sandbox preview` | Run the offline terminal simulation |
 
-Use `--wait 0` to return immediately after creation. Interrupting the readiness
+For `create`, use `--wait 0` to return immediately after creation. Interrupting its readiness
 wait or exiting `watch` does not delete the workspace. Commands are executable
 and argument arrays; shell syntax requires an explicit `sh -c`.
 
@@ -445,7 +486,8 @@ to validate those boundaries on GKE.
 ### Source reading path
 
 1. [`internal/cli/cli.go`](internal/cli/cli.go): command dispatch and the
-   create/upload/execute flow; [`ui.go`](internal/cli/ui.go) handles terminal views.
+   create/upload/execute flow; [`run.go`](internal/cli/run.go) owns pinned repository
+   runs and cleanup; [`ui.go`](internal/cli/ui.go) handles terminal views.
 2. [`internal/client/client.go`](internal/client/client.go): HTTP requests,
    deadlines, event decoding, and final-result handling.
 3. [`internal/cloud/claims.go`](internal/cloud/claims.go), then
