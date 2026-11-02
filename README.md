@@ -20,6 +20,11 @@ starting the port-forward below, run `vhs demo-v2.tape` to record the same flow
 with VHS, ttyd, ffmpeg, and Chrome installed. It writes `demo-v2.gif` and
 `demo-v2.mp4` in the repository root.
 
+Run `vhs demo-repo.tape` to record a pinned public SubmitQueue checkout, its
+Git change-ID package tests, and workspace cleanup. It writes `demo-repo.mp4`.
+This fetches the repository and Go dependencies remotely; it is a focused Go
+test run, not SubmitQueue’s full Bazel CI suite.
+
 Sandbox Cloud is designed for trusted development workloads. It does not provide
 hostile-code isolation or a multi-user authentication layer.
 
@@ -372,7 +377,7 @@ may end without a final result; the CLI reports an unknown outcome.
 | Command timeout | 60 seconds; range 1 second–1 hour |
 | CPU request / limit | 100 millicores / 1 core |
 | Memory request / limit | 128 MiB / 512 MiB |
-| Ephemeral storage request / limit | 128 MiB / 1 GiB |
+| Ephemeral storage request / limit | 1 GiB / 1 GiB |
 | `/workspace` / `/tmp` volume limits | 512 MiB / 256 MiB |
 | Upload maximum | 8 MiB per file |
 | Runtime UID/GID | 65532 |
