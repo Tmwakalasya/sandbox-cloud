@@ -1,8 +1,9 @@
 # Sandbox Cloud
 
-**Disposable Kubernetes workspaces, controlled from a Go CLI.** Upload a project,
-run commands with streamed output, and keep files between executions. Destroy the
-workspace when finished, or let its TTL expire.
+**Disposable Kubernetes workspaces, controlled from a Go CLI.** Run a public
+repository at a pinned commit, or upload local files and execute commands in a
+workspace. Stream results, reuse files between commands, and clean up explicitly
+or through a TTL.
 
 - Animated terminal views, plain-text output, and JSON for scripting.
 - Remote command execution with deadlines, cancellation, and output replay.
@@ -10,20 +11,9 @@ workspace when finished, or let its TTL expire.
 - Kubernetes-backed workspace inventory and expiration that survives API restarts.
 - Cloud Build and GKE deployment without a local container runtime.
 
-[Deployment guide](deploy/README.md) · [CLI reference](#cli-reference) ·
-[Architecture](#architecture) · [Source reading path](#source-reading-path)
-
-![Live GKE demo: create a workspace, upload Go code, test, run, and destroy it](docs/demo.gif)
-
-Recorded against GKE with the warm pool enabled. After building the CLI and
-starting the port-forward below, run `vhs demo-v2.tape` to record the same flow
-with VHS, ttyd, ffmpeg, and Chrome installed. It writes `demo-v2.gif` and
-`demo-v2.mp4` in the repository root.
-
-Run `vhs demo-repo.tape` to record a pinned public SubmitQueue checkout, its
-Git change-ID package tests, and workspace cleanup. It writes `demo-repo.mp4`.
-This fetches the repository and Go dependencies remotely; it is a focused Go
-test run, not SubmitQueue’s full Bazel CI suite.
+[Deployment](deploy/README.md) · [Architecture](#architecture) ·
+[CLI](#cli-reference) · [HTTP API](docs/api.md) ·
+[Lifecycle guarantees](docs/lifecycle.md) · [Benchmarks](docs/performance.md)
 
 Sandbox Cloud is designed for trusted development workloads. It does not provide
 hostile-code isolation or a multi-user authentication layer.
@@ -174,7 +164,7 @@ selects a ready Pod with the configured image, then uses Kubernetes
 `resourceVersion` checks to assign it exclusively. The claim records the physical
 Pod name and UID, so retries and API restarts preserve the assignment. If no ready
 Pod is available, or another workspace wins the selected Pod, allocation falls
-back to a fresh Pod. CLI commands and HTTP request bodies are unchanged.
+back to a fresh Pod.
 
 For warm workspaces, the user TTL begins when the claim becomes active. Cold
 workspaces retain a TTL measured from Pod creation. Idle Pods are hidden from
@@ -208,86 +198,16 @@ Replenishment failures are logged and do not invalidate active workspaces.
    rejects new runner operations and the expiry loop requests Pod deletion.
    Removing the Pod also removes its ephemeral volumes.
 
-## Lifecycle and guarantees
+### Execution guarantees
 
-### Workspace state
+Each runner accepts one active command at a time; competing commands and uploads
+receive HTTP 409. Commands survive client disconnects and API restarts, but runner
+results and workspace files are lost when the Pod is removed. IDs support bounded
+deduplication, not durable exactly-once execution.
 
-| State | Meaning |
-| --- | --- |
-| `pending` | Allocation is in progress, or the assigned Pod is unscheduled |
-| `starting` | Node assigned; runner is not ready |
-| `ready` | Pod is Running with its Ready condition true |
-| `terminated` | Pod or runner has terminated |
-| `unavailable` | Assigned Pod is missing/replaced, Pod state is Unknown, or lifecycle metadata is invalid |
-| `expired` | Absolute expiration timestamp has passed |
-| `terminating` | Deletion has been accepted and removal is in progress |
-
-Ownership labels identify managed Pods and claim ConfigMaps. Claims store the
-requested image and TTL, allocation phase, Pod name/UID, and expiration. A pending
-reservation has two minutes to complete. Reconciliation resumes interrupted
-allocations; a failed submission can therefore complete later. Inspect the printed
-ID before submitting a different request. Active claims are never reassigned to a
-replacement Pod, and retries do not extend their lifetime.
-
-The expiry loop reads Kubernetes state on startup and every five seconds, with a
-15-second deadline per reconciliation pass. It checks expiration again when
-marking a claim for deletion, because binding can replace the pending deadline
-with the user's full TTL. Invalid lifecycle metadata is reported rather than
-guessed. Pods from older versions retain their annotation-based expiration.
-
-Deletion checks object UIDs. Idle cleanup also checks `resourceVersion`, protecting
-a newly claimed Pod from a stale idle snapshot. Pod owner references and orphan
-reconciliation clean up late allocations whose claim was already deleted.
-
-`activeDeadlineSeconds` is a kubelet backstop measured from Pod start. Cold Pods
-use the requested TTL. Warm Pods use **24 hours 12 minutes**, covering the maximum
-workspace TTL plus idle and allocation time; the shorter user TTL is enforced by
-the control API. During a prolonged API outage, a warm workspace can therefore
-keep executing past its requested TTL until kubelet cleanup occurs.
-
-Scheduling delays, outages, and termination grace can delay physical cleanup.
-**TTL controls admission and cleanup eligibility; physical deletion is eventual
-and depends on cluster availability.**
-
-### Execution and concurrency
-
-Each runner admits **one active command per workspace**. A competing command or
-file upload receives HTTP 409. A mutex protects admission, command results, and
-output, preventing two callers from both observing an idle workspace.
-
-Commands outlive their submitting HTTP requests. Disconnecting or pressing Ctrl-C
-in the CLI stops the local stream; explicit cancellation or the runner-owned
-deadline stops the remote command. Cancellation kills its Unix process group.
-Remaining members of that group are also cleaned up when execution ends. A
-process that deliberately detaches into another group is outside the trusted
-workload contract; Pod deletion is the broader cleanup boundary.
-
-Output subscribers capture a snapshot and a notification channel under the same
-mutex. Writers signal that channel on output and completion. This prevents a
-missed wakeup between checking for output and waiting for more.
-
-Results are `running`, `succeeded`, `failed`, `timed_out`, or `cancelled`. An
-executable that cannot start returns HTTP 422 and releases the active slot.
-Completion and cancellation racing with each other are classified from the
-runner's observed process result and context; they have no durable global order.
-
-### Retention and retries
-
-- Each runner retains up to 32 command records in memory.
-- Each command retains up to 1 MiB of combined stdout/stderr and 4096 chunks.
-  Excess output is drained and discarded, with `truncated` set on the result.
-- Reconnecting replays retained output from the beginning before following new
-  output. There is no offset-based resume.
-- A retained command ID with an identical request returns the existing command;
-  different settings return 409. Eviction or runner loss forgets the ID.
-- Workspace creation is idempotent while its claim exists. A reused ID with
-  different image or TTL settings returns 409. A missing assigned Pod is reported
-  as unavailable and is not silently replaced.
-- The CLI prints IDs before submission and does not automatically retry an
-  uncertain command submission. Inspect the ID after a lost response.
-
-These are bounded deduplication guarantees, not durable exactly-once execution.
-Workspace files, command results, and output are lost when the Pod is removed.
+TTL controls admission and cleanup eligibility. Physical deletion is eventual and
+depends on cluster availability. See [lifecycle and failure behavior](docs/lifecycle.md)
+for claim recovery, cancellation, retention limits, and warm-Pod deadline semantics.
 
 ## CLI reference
 
@@ -330,45 +250,6 @@ paths relative to `/workspace`. Files become mode 0644. Empty directories are no
 preserved, and no ignore rules are applied. Each file replacement is atomic; a
 directory upload is sequential and can leave earlier files if a later file fails.
 
-## HTTP API
-
-| Method and path | Result |
-| --- | --- |
-| `GET /healthz` | HTTP process health, not Kubernetes connectivity |
-| `POST /v1/workspaces` | Create or retrieve a workspace with matching settings |
-| `GET /v1/workspaces` | List managed workspaces |
-| `GET /v1/workspaces/{id}` | Inspect workspace state |
-| `DELETE /v1/workspaces/{id}` | Request asynchronous deletion |
-| `PUT /v1/workspaces/{id}/files?path=relative/path` | Upload one file |
-| `POST /v1/workspaces/{id}/commands` | Start a command |
-| `GET /v1/workspaces/{id}/commands/{command}` | Read a retained result |
-| `GET /v1/workspaces/{id}/commands/{command}/events` | Replay and follow NDJSON output |
-| `POST /v1/workspaces/{id}/commands/{command}/cancel` | Request cancellation |
-
-Workspace creation body:
-
-```json
-{"id":"sbx-0123456789abcdef01234567","ttl_seconds":1200}
-```
-
-Command submission body:
-
-```json
-{"id":"cmd-0123456789abcdef01234567","command":["go","test","./..."],"timeout_seconds":60}
-```
-
-Events carry either output or a final result:
-
-```json
-{"stream":"stdout","data":"ok example\n"}
-{"stream":"result","result":{"id":"cmd-0123456789abcdef01234567","state":"succeeded","exit_code":0,"started_at":"2026-10-31T12:00:00Z","finished_at":"2026-10-31T12:00:01Z","truncated":false}}
-```
-
-Errors use `{"error":"message"}`. Validation errors return 400, missing objects
-404, conflicts 409, oversized uploads 413, and process-start failures 422.
-Kubernetes permission and quota failures are surfaced to callers. A broken stream
-may end without a final result; the CLI reports an unknown outcome.
-
 ## Resource and security boundaries
 
 | Workspace setting | Default or limit |
@@ -404,71 +285,16 @@ authorization or durable audit log. Keep the API internal and use dedicated
 namespaces without unrelated credentials or workloads. Ownership labels are not
 an authorization boundary against principals allowed to modify those Pods.
 
-## Failure behavior
-
-| Failure | Behavior |
-| --- | --- |
-| CLI disconnect | Command continues; reconnect using its ID while retained |
-| API restart | Pods and commands remain; claims recover allocation and expiration from Kubernetes |
-| Empty warm pool | Create a fresh Pod and wait for ordinary Kubernetes readiness |
-| Replenishment quota failure | Active workspaces continue; reserve remains below target and an error is logged |
-| Runner crash | In-memory results are lost; workspace Pod is not automatically restarted |
-| Node loss | Workspace can be unavailable or lost; files have no durable recovery |
-| Command timeout | Runner kills the process group independently of the client |
-| Image pull failure | Pod waiting reason is exposed; workspace does not become ready |
-| Kubernetes unavailable | Operations fail; expiration cleanup resumes when access returns |
-| Concurrent submissions | One command is admitted; the other receives 409 |
-| Lost submission response | Inspect the printed ID before deciding whether to retry |
-| Interrupted or oversized upload | Existing target survives; temporary file is cleaned up |
-| Stale cleanup request | UID precondition protects a replacement Pod with the same name |
-
 ## Performance
 
-A local benchmark compared a 50 ms output-polling implementation with the current
-state-change notifications. Each iteration submits `true` over loopback HTTP,
-starts the process, attaches to the event stream, and consumes the final result.
-Both versions use the same workload and completion/output contract.
+Three recorded GKE bursts of ten workspaces completed 30/30 attempts. Six warm
+allocations had a 494 ms request-to-ready median; 24 cold allocations had an
+8,744 ms median. These are small observational samples, including network and
+polling overhead, rather than a general latency guarantee.
 
-Environment: Apple M4 Pro, macOS/arm64, Go 1.26.0, 12 logical CPUs reported by the
-runtime. Three samples of 20 iterations per version, without the race detector:
-
-| Sample | Polling | Notifications |
-| --- | ---: | ---: |
-| 1 | 54.572 ms/op | 2.065 ms/op |
-| 2 | 53.453 ms/op | 1.672 ms/op |
-| 3 | 55.959 ms/op | 1.619 ms/op |
-
-The notification version allocated approximately 122–123 KiB and 318–320
-allocations per operation. These are small diagnostic samples without a
-statistical significance test. They exclude server startup, Kubernetes scheduling,
-container startup, image pulls, and cloud networking; they do not measure
-workspace startup latency or cloud capacity.
-
-Run the current benchmark:
-
-```sh
-GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off \
-  go test ./internal/runner -run '^$' \
-  -bench BenchmarkCommandRoundTrip -benchmem -benchtime=20x -count=3
-```
-
-Cluster benchmarks should separately measure request-to-ready and command-start
-latency, distinguish cold and cached images, and record failures alongside
-p50/p95/p99. Record image digest, resource settings, and concurrency. CLI readiness
-polling has one-second granularity and is unsuitable for precise startup timing.
-
-Use [`sandbox-bench`](docs/benchmark.md) for concurrent live-cluster bursts. It
-measures HTTP request-to-ready and command round-trip time, classifies allocations
-from claim and Pod metadata, checks exclusive assignment, and cleans up its own
-workspaces. Reports retain failed attempts alongside per-source p50/p95 and
-admitted resource settings. The tool does not provision capacity or change the
-pool target; see the guide before running it against a cluster.
-
-In the [recorded GKE run](docs/benchmark.md#recorded-gke-run-november-1-2026), three
-bursts of ten workspaces completed 30/30 attempts: six warm allocations had a
-494 ms readiness median; 24 cold allocations had an 8,744 ms median. These small,
-observational groups include polling and network overhead. The guide records the
-failed client-limiter baseline, image digests, admitted resources, and raw reports.
+See [measurements and methodology](docs/performance.md) and the
+[live-cluster benchmark guide](docs/benchmark.md) for raw reports, resource
+settings, failure counts, and reproduction commands.
 
 ## Development
 

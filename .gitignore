@@ -2,3 +2,9 @@
 /.local/
 /deploy/api.rendered.yaml
 __pycache__/
+
+# Local demo recordings and recording scripts
+/demo*.tape
+/demo*.gif
+/demo*.mp4
+/docs/demo.gif

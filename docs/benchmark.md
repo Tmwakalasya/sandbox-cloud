@@ -117,13 +117,6 @@ For a demo, add `--rounds 1 --hold 15s` and run `sandbox watch` in another termi
 The hold happens after measurement, while all successfully created workspaces
 remain alive. `--help` lists timeouts and polling controls.
 
-To record that live flow with VHS, export `KUBECONFIG`, `SANDBOX_CONTEXT`, and
-`SANDBOX_API` for the same cluster, then run `vhs demo-burst.tape`. The tape uses
-`burst10` as a shell helper for the benchmark command above, with one round and a
-25-second hold. It displays the two-Pod reserve, watches ten Ready workspaces,
-shows the actual results, and verifies cleanup and reserve recovery. It writes
-`demo-burst.mp4`; the report and log remain in a new `.local/demo-burst.*` directory.
-
 ## What the numbers mean
 
 - **Request to ready:** client monotonic time from sending create to observing a
