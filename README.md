@@ -9,9 +9,10 @@ or through a TTL.
 - Remote command execution with deadlines, cancellation, and output replay.
 - Optional warm pool with exclusive Pod claims and automatic replenishment.
 - Kubernetes-backed workspace inventory and expiration that survives API restarts.
+- Local development with OrbStack and k3d, without cloud compute.
 - Cloud Build and GKE deployment without a local container runtime.
 
-[Deployment](deploy/README.md) · [Architecture](#architecture) ·
+[Local setup](deploy/local/README.md) · [GKE deployment](deploy/README.md) · [Architecture](#architecture) ·
 [CLI](#cli-reference) · [HTTP API](docs/api.md) ·
 [Lifecycle guarantees](docs/lifecycle.md) · [Benchmarks](docs/performance.md)
 
@@ -19,6 +20,11 @@ Sandbox Cloud is designed for trusted development workloads. It does not provide
 hostile-code isolation or a multi-user authentication layer.
 
 ## Getting started
+
+For local development, follow the [OrbStack + k3d guide](deploy/local/README.md).
+After installing the prerequisites and building the CLI, `make local-up` creates
+the local runtime and `make local-port-forward` connects the CLI. No GCP account
+is required. The optional landing page runs independently with `make site`.
 
 ### Build the CLI
 

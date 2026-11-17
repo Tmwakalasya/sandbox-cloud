@@ -1,4 +1,4 @@
-# Build only in Cloud Build. Local container builds are not required.
+# Shared targets for local Docker builds and Cloud Build.
 FROM golang:1.26.0-bookworm AS build
 WORKDIR /src
 COPY go.mod go.sum ./

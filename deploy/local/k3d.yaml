@@ -1,0 +1,28 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: sandbox-cloud-local
+servers: 1
+agents: 0
+image: rancher/k3s:v1.35.2-k3s1
+kubeAPI:
+  host: 127.0.0.1
+  hostIP: 127.0.0.1
+  hostPort: '6550'
+registries:
+  create:
+    name: sandbox-cloud-registry.localhost
+    host: 127.0.0.1
+    hostPort: '5001'
+options:
+  k3d:
+    wait: true
+    timeout: 180s
+    disableLoadbalancer: true
+  k3s:
+    extraArgs:
+      - arg: --disable=traefik,servicelb,metrics-server
+        nodeFilters: ['server:*']
+  kubeconfig:
+    updateDefaultKubeconfig: false
+    switchCurrentContext: false
