@@ -33,6 +33,11 @@ Dockerfile targets for the Docker engine's native architecture, pushes them to
 `127.0.0.1:5001`, and deploys immutable digests. Apple Silicon does not require
 amd64 emulation. The pinned K3s image is `rancher/k3s:v1.35.2-k3s1`.
 
+The registry container is named `sandbox-cloud-registry.localhost`, exactly as
+specified in `k3d.yaml`. Images inside the cluster use
+`sandbox-cloud-registry.localhost:5000`; k3d configures its HTTP registry mirror.
+Do not add a `k3d-` prefix to this explicitly configured registry name.
+
 The Kubernetes API and registry bind to **127.0.0.1**, not all host interfaces.
 The local overlay reuses `deploy/foundation.yaml`; the helper renders it with
 Kustomize's `LoadRestrictionsNone` to permit that checked-in parent-file reference,
@@ -114,7 +119,7 @@ Before relying on the local environment, also run the applicable
 [deployment acceptance checks](../README.md#6-acceptance-checks):
 
 - Inspect host bindings with `docker port k3d-sandbox-cloud-local-server-0`
-  and `docker port k3d-sandbox-cloud-registry.localhost`.
+  and `docker port sandbox-cloud-registry.localhost`.
 - Confirm no warm Pods exist after setup and repeated `local-up`.
 - Keep a workspace active, repeat `local-up`, then inspect it and execute a new command.
 - Request another workspace while the first exists; inspect the quota error and
@@ -137,11 +142,30 @@ not establish image pulling, scheduling, NetworkPolicy enforcement, or OrbStack 
 | Docker connection fails | OrbStack running, correct Docker context, `docker info` |
 | Existing cluster refused | Keep `.local/owner.json`; use the original checkout and engine |
 | Port in use | Stop the unrelated listener or adjust the checked-in local config and helper together |
-| `ImagePullBackOff` | Registry running, Docker push succeeded, Pod image references the internal registry name |
+| `ImagePullBackOff` | Registry running, Docker push succeeded, Pod image references `sandbox-cloud-registry.localhost:5000` |
 | Go build fails | Go 1.26 available; dependencies downloaded before `make build` |
 | Workspace pending | Pod events, node disk/memory, namespace quota, old terminating workspace |
 | Stream ends after API rollout | Restart `make local-port-forward`, reconnect using command ID |
 | Registry left after failed create | `make local-down CONFIRM=yes`, then retry `make local-up` |
+
+### Recover an older registry-name mismatch
+
+An earlier helper incorrectly added `k3d-` to the explicit registry name. This
+caused `ImagePullBackOff` for images beginning with
+`k3d-sandbox-cloud-registry.localhost:5000/`; a repeated `local-up` could also
+incorrectly report a missing registry.
+
+Keep the existing cluster, registry, and `.local/owner.json`. From your checkout,
+update the helper and rerun setup:
+
+```sh
+git pull --ff-only origin main
+make local-up
+make local-check
+```
+
+The corrected helper reuses the same registry and deploys digest-pinned images
+with its actual name. No cluster reset, registry rename, or TLS bypass is needed.
 
 ## Website
 

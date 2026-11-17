@@ -21,7 +21,8 @@ HERE = Path(__file__).resolve().parent
 STATE = ROOT / ".local"
 CLUSTER = "sandbox-cloud-local"
 CONTEXT = "k3d-" + CLUSTER
-REGISTRY = "k3d-sandbox-cloud-registry.localhost"
+# k3d preserves the explicit registries.create.name in k3d.yaml.
+REGISTRY = "sandbox-cloud-registry.localhost"
 PUSH = "127.0.0.1:5001"
 PULL = REGISTRY + ":5000"
 
